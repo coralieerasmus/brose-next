@@ -36,6 +36,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <div className="site-vignette" aria-hidden="true" />
         <div className="grain-overlay" aria-hidden="true" />
       </body>
     </html>

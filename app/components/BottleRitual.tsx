@@ -45,6 +45,7 @@ export default function BottleRitual() {
   const bgRef = useRef<HTMLDivElement>(null); // lion + lace, faded out at fall-start
   const vignetteRef = useRef<HTMLDivElement>(null);
   const wordRef = useRef<HTMLDivElement>(null);
+  const backlightRef = useRef<HTMLDivElement>(null);
   const waveRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const cardsGlowRef = useRef<HTMLDivElement>(null);
@@ -60,6 +61,7 @@ export default function BottleRitual() {
       !bgRef.current ||
       !vignetteRef.current ||
       !wordRef.current ||
+      !backlightRef.current ||
       !waveRef.current ||
       !cardsRef.current ||
       !cardsGlowRef.current ||
@@ -73,6 +75,7 @@ export default function BottleRitual() {
     const bg = bgRef.current!;
     const vignette = vignetteRef.current!;
     const word = wordRef.current!;
+    const backlight = backlightRef.current!;
     const wave = waveRef.current!;
     const cards = cardsRef.current!;
     const cardsGlow = cardsGlowRef.current!;
@@ -367,6 +370,7 @@ export default function BottleRitual() {
         if (now - landedStart >= WORD_DELAY_MS) {
           phase = "word";
           word.classList.add("show");
+          backlight.classList.add("show");
           landedStart = now;
         }
       } else if (phase === "word") {
@@ -392,6 +396,7 @@ export default function BottleRitual() {
         if (now - landedStart >= WAVE_MS) {
           phase = "unword";
           word.classList.remove("show");
+          backlight.classList.remove("show");
           landedStart = now;
         }
       } else if (phase === "unword") {
@@ -432,7 +437,7 @@ export default function BottleRitual() {
   }, []);
 
   return (
-    <section ref={wrapRef} className="ritual-wrap">
+    <section id="ritual-wrap" ref={wrapRef} className="ritual-wrap">
       <div ref={debugRef} className="debug" />
       <div ref={pinRef} className="ritual-pin">
         <div ref={bgRef} className="bg">
@@ -442,6 +447,7 @@ export default function BottleRitual() {
           </div>
         </div>
 
+        <div ref={backlightRef} className="backlight" />
         <div ref={wordRef} className="word">
           Unbreakable
         </div>
@@ -554,6 +560,23 @@ export default function BottleRitual() {
           opacity: 0;
         }
 
+        .backlight {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          transition: opacity 1s ease;
+          background: radial-gradient(
+            circle at 50% 55%,
+            rgba(255, 236, 190, 0.9) 0%,
+            rgba(255, 200, 160, 0.5) 22%,
+            transparent 55%
+          );
+          pointer-events: none;
+        }
+        .backlight.show {
+          opacity: 1;
+        }
+
         .word {
           position: absolute;
           inset: 0;
@@ -587,14 +610,15 @@ export default function BottleRitual() {
 
         .cards-glow {
           position: absolute;
-          inset: -10%;
+          inset: -20%;
           opacity: 0;
           transition: opacity 1.2s ease;
-          background: radial-gradient(circle at 20% 30%, rgba(210, 20, 20, 0.35) 0%, transparent 40%),
-            radial-gradient(circle at 80% 70%, rgba(210, 20, 20, 0.3) 0%, transparent 42%),
-            radial-gradient(circle at 50% 90%, rgba(120, 10, 10, 0.3) 0%, transparent 45%);
-          background-size: 160% 160%, 180% 180%, 200% 200%;
-          animation: cardsDrift 28s ease-in-out infinite alternate;
+          background: radial-gradient(circle at 20% 30%, rgba(230, 30, 30, 0.4) 0%, transparent 38%),
+            radial-gradient(circle at 80% 70%, rgba(210, 20, 20, 0.35) 0%, transparent 40%),
+            radial-gradient(circle at 50% 90%, rgba(140, 10, 15, 0.35) 0%, transparent 42%),
+            radial-gradient(circle at 65% 15%, rgba(180, 15, 20, 0.3) 0%, transparent 38%);
+          background-size: 200% 200%, 220% 220%, 240% 240%, 210% 210%;
+          animation: cardsDrift 14s ease-in-out infinite alternate;
           pointer-events: none;
         }
         .cards-glow.show {
@@ -602,13 +626,19 @@ export default function BottleRitual() {
         }
         @keyframes cardsDrift {
           0% {
-            background-position: 10% 20%, 80% 70%, 50% 100%;
+            background-position: 0% 10%, 100% 90%, 30% 100%, 90% 0%;
+          }
+          25% {
+            background-position: 40% 60%, 70% 30%, 60% 70%, 50% 40%;
           }
           50% {
-            background-position: 35% 55%, 60% 40%, 45% 70%;
+            background-position: 90% 20%, 20% 60%, 80% 30%, 10% 80%;
+          }
+          75% {
+            background-position: 30% 80%, 60% 10%, 20% 50%, 70% 60%;
           }
           100% {
-            background-position: 70% 30%, 30% 65%, 55% 85%;
+            background-position: 100% 100%, 0% 0%, 60% 20%, 20% 90%;
           }
         }
         .cards {
@@ -757,14 +787,11 @@ export default function BottleRitual() {
             width: 80vh;
             transform: translate(-50%, -50%) rotate(90deg);
           }
-          /* turned on its side to fit the narrow width — rotate is baked
-             into both states so the existing scale reveal (0.92 -> 1)
-             still animates normally on top of it */
+          /* single line, same as desktop — just small enough to actually
+             fit the width without wrapping or overflowing */
           .word {
-            transform: scale(0.92) rotate(-90deg);
-          }
-          .word.show {
-            transform: scale(1) rotate(-90deg);
+            font-size: clamp(32px, 9.5vw, 60px);
+            white-space: nowrap;
           }
           /* stacked instead of side-by-side — not enough width for three
              columns on a phone */

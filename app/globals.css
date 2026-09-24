@@ -9,18 +9,30 @@ body {
   font-family: "Cormorant", serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden; /* belt-and-suspenders: nothing on the page should ever be able to open up horizontal scroll */
+  cursor: url("/cursor.png") 20 18, auto; /* site-wide custom cursor — hotspot is a guess (roughly centered); adjust the two numbers if the click-point looks off */
+}
+
+/* Subtle vignette across the entire site — darkens the edges a touch,
+   sits below the grain so both are visible together. Doesn't intercept
+   clicks, same as the grain. */
+.site-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 120%);
 }
 
 /* Grain, laid over the entire site — fixed so it stays put while the page
    scrolls, sitting above everything (including the bottle canvas, z-index
-   50) but not intercepting clicks. Swap grain.png for grain.webp if you
-   want the smaller file; both are the same 1024x1024 tile. */
+   50) but not intercepting clicks. Using the .webp (smaller file, same
+   1024x1024 tile as the .png). */
 .grain-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  background-image: url("/grain.png");
+  background-image: url("/grain.webp");
   background-repeat: repeat;
   background-size: 420px 420px; /* tile size on screen — smaller = grainier, larger = softer */
 }

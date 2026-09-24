@@ -3,9 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import BottleRitual from "./components/BottleRitual";
 
-const SWORD_CURSOR =
-  "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\"><path d=\"M16 2 L16 19\" stroke=\"white\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M8 19 L24 19\" stroke=\"white\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M16 19 L16 25\" stroke=\"white\" stroke-width=\"2.2\" fill=\"none\"/><circle cx=\"16\" cy=\"27\" r=\"1.8\" fill=\"white\"/></svg>') 16 2, crosshair";
-
 export default function Home() {
   const stageRef = useRef<HTMLDivElement>(null);
   const introRef = useRef<HTMLDivElement>(null);
@@ -133,8 +130,32 @@ export default function Home() {
 
         </div>
         <div className="links">
-          <a href="#visuals">visuals</a>
-          <a href="#story">our story</a>
+          <a
+            href="#ritual-wrap"
+            onClick={(e) => {
+              e.preventDefault();
+              const el = document.getElementById("ritual-wrap");
+              if (el) window.scrollTo({ top: el.offsetTop, behavior: "smooth" });
+            }}
+          >
+            visuals
+          </a>
+          <a
+            href="#ritual-wrap"
+            onClick={(e) => {
+              e.preventDefault();
+              const el = document.getElementById("ritual-wrap");
+              if (!el) return;
+              // Lands just past the point where the rotation phase
+              // completes — the pinned cinematic (fall/word/wave/cards)
+              // then plays out on its own from there, same as scrolling
+              // there by hand, ending on the cards.
+              const target = el.offsetTop + el.offsetHeight - window.innerHeight + 60;
+              window.scrollTo({ top: target, behavior: "smooth" });
+            }}
+          >
+            our story
+          </a>
         </div>
       </nav>
 
@@ -148,7 +169,6 @@ export default function Home() {
           height: 100vh;
           height: 100dvh;
           overflow: hidden;
-          cursor: ${SWORD_CURSOR};
           touch-action: none; /* keep the page from panning under the drag/tilt gesture */
         }
 
