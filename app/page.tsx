@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import LaceSection from "./components/LaceSection";
 
 const SWORD_CURSOR =
   "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\"><path d=\"M16 2 L16 19\" stroke=\"white\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M8 19 L24 19\" stroke=\"white\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M16 19 L16 25\" stroke=\"white\" stroke-width=\"2.2\" fill=\"none\"/><circle cx=\"16\" cy=\"27\" r=\"1.8\" fill=\"white\"/></svg>') 16 2, crosshair";
@@ -60,6 +61,7 @@ export default function Home() {
   }, []);
 
   return (
+    <>
     <div className="stage" ref={stageRef}>
       <div className="base" />
       <div className="glow" />
@@ -194,7 +196,7 @@ export default function Home() {
         }
         .content :global(span) {
           display: block;
-          font-family: "UnifrakturMaguntia", serif;
+          font-family: var(--font-respira-black), serif;
           font-weight: 400;
           color: #0c0407;
           text-shadow: 0 0 40px rgba(255, 40, 40, 0.15);
@@ -277,5 +279,7 @@ export default function Home() {
         }
       `}</style>
     </div>
+    <LaceSection />
+    </>
   );
 }
