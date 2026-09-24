@@ -49,7 +49,7 @@ export default function BottleRitual() {
   const waveRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const cardsGlowRef = useRef<HTMLDivElement>(null);
-  const debugRef = useRef<HTMLDivElement>(null); // remove this + SHOW_DEBUG once the sequence is confirmed working
+  const backToTopRef = useRef<HTMLButtonElement>(null);
 
   const [openCard, setOpenCard] = useState<CardId>("bottle");
 
@@ -65,7 +65,7 @@ export default function BottleRitual() {
       !waveRef.current ||
       !cardsRef.current ||
       !cardsGlowRef.current ||
-      !debugRef.current
+      !backToTopRef.current
     ) {
       return;
     }
@@ -79,8 +79,7 @@ export default function BottleRitual() {
     const wave = waveRef.current!;
     const cards = cardsRef.current!;
     const cardsGlow = cardsGlowRef.current!;
-    const debug = debugRef.current!;
-    const SHOW_DEBUG = true; // flip to false (or delete the overlay) once confirmed working
+    const backToTop = backToTopRef.current!;
 
     // ---- three.js setup — perspective camera (not orthographic): the
     // fall needs real depth cues an orthographic projection can't give. ----
@@ -255,6 +254,7 @@ export default function BottleRitual() {
         lockScroll();
         cards.classList.remove("show");
         cardsGlow.classList.remove("show");
+        backToTop.classList.remove("show");
         landedStart = performance.now();
       }
       lastScrollY = window.scrollY;
@@ -300,20 +300,9 @@ export default function BottleRitual() {
       return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
     }
 
-    let lastLoggedPhase = "";
-    let phaseSince = performance.now();
-
     function animate(now: number) {
       raf = requestAnimationFrame(animate);
       updatePinAndProgress();
-
-      if (phase !== lastLoggedPhase) {
-        lastLoggedPhase = phase;
-        phaseSince = now;
-      }
-      if (SHOW_DEBUG) {
-        debug.textContent = `phase: ${phase} | rotation: ${(rotationProgress * 100).toFixed(1)}% | in phase: ${((now - phaseSince) / 1000).toFixed(1)}s | scrollLocked: ${scrollLocked}`;
-      }
 
       if (!modelReady) {
         renderer.render(scene, camera);
@@ -384,6 +373,7 @@ export default function BottleRitual() {
           phase = "cards";
           cards.classList.add("show");
           cardsGlow.classList.add("show");
+          backToTop.classList.add("show");
           unlockScroll();
         }
       } else if (phase === "uncards") {
@@ -438,7 +428,6 @@ export default function BottleRitual() {
 
   return (
     <section id="ritual-wrap" ref={wrapRef} className="ritual-wrap">
-      <div ref={debugRef} className="debug" />
       <div ref={pinRef} className="ritual-pin">
         <div ref={bgRef} className="bg">
           <img className="lion" src="/images/lion.png" alt="" aria-hidden="true" />
@@ -482,23 +471,18 @@ export default function BottleRitual() {
             </button>
           ))}
         </div>
+
+        <button
+          ref={backToTopRef}
+          className="back-to-top"
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "auto" })}
+        >
+          ↑ back to top
+        </button>
       </div>
 
       <style jsx>{`
-        .debug {
-          position: fixed;
-          top: 10px;
-          left: 10px;
-          z-index: 99999;
-          background: rgba(0, 0, 0, 0.75);
-          color: #7dff9e;
-          font-family: monospace;
-          font-size: 12px;
-          padding: 6px 10px;
-          border-radius: 6px;
-          pointer-events: none;
-          white-space: nowrap;
-        }
         .ritual-wrap {
           position: relative;
           height: 220vh;
@@ -640,6 +624,35 @@ export default function BottleRitual() {
           100% {
             background-position: 100% 100%, 0% 0%, 60% 20%, 20% 90%;
           }
+        }
+        .back-to-top {
+          all: unset;
+          box-sizing: border-box;
+          position: absolute;
+          bottom: 22px;
+          right: 84px; /* was 22px — collided with the site-wide mute toggle at right:20px/width:42px */
+          z-index: 5;
+          cursor: pointer;
+          padding: 9px 16px;
+          border-radius: 999px;
+          background: rgba(0, 0, 0, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          color: #f2ece2;
+          font-family: "Cormorant", serif;
+          font-size: 13px;
+          letter-spacing: 0.03em;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 0.5s ease, transform 0.5s ease, background 0.2s ease;
+          pointer-events: none;
+        }
+        .back-to-top.show {
+          opacity: 0.85;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+        .back-to-top:hover {
+          background: rgba(0, 0, 0, 0.65);
         }
         .cards {
           position: absolute;
@@ -788,10 +801,14 @@ export default function BottleRitual() {
             transform: translate(-50%, -50%) rotate(90deg);
           }
           /* single line, same as desktop — just small enough to actually
-             fit the width without wrapping or overflowing */
+             fit the width without wrapping or overflowing. Positioned
+             higher than dead-center too, so it clears the bulk of the
+             bottle instead of sitting hidden behind it. */
           .word {
             font-size: clamp(32px, 9.5vw, 60px);
             white-space: nowrap;
+            align-items: flex-start;
+            padding-top: 14vh;
           }
           /* stacked instead of side-by-side — not enough width for three
              columns on a phone */

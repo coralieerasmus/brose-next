@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import SiteChrome from "./components/SiteChrome";
 
 // Only Respira Black — Della Respira is retired, don't reintroduce it here.
 const respiraBlack = localFont({
@@ -38,6 +39,7 @@ export default function RootLayout({
         {children}
         <div className="site-vignette" aria-hidden="true" />
         <div className="grain-overlay" aria-hidden="true" />
+        <SiteChrome />
       </body>
     </html>
   );
