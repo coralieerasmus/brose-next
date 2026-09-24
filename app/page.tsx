@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import LaceSection from "./components/LaceSection";
+import BottleRitual from "./components/BottleRitual";
 
 const SWORD_CURSOR =
   "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\"><path d=\"M16 2 L16 19\" stroke=\"white\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M8 19 L24 19\" stroke=\"white\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M16 19 L16 25\" stroke=\"white\" stroke-width=\"2.2\" fill=\"none\"/><circle cx=\"16\" cy=\"27\" r=\"1.8\" fill=\"white\"/></svg>') 16 2, crosshair";
@@ -128,16 +128,13 @@ export default function Home() {
 
       <nav>
         <div className="mark" aria-hidden="true">
-          <svg viewBox="0 0 100 100" fill="none" stroke="#cfc9c8" strokeWidth={2.2}>
-            <path d="M20 70 Q15 50 25 35 Q30 20 45 18 Q55 15 60 22 Q68 20 72 28 Q80 30 78 40 Q85 45 80 52 Q84 60 76 62 Q78 70 68 70 Q65 78 55 74 Q48 80 40 74 Q28 78 20 70 Z" />
-            <path d="M35 45 Q38 42 42 45" />
-            <circle cx="38" cy="38" r="1.4" fill="#cfc9c8" />
-          </svg>
+          <img src="/images/griff.png" alt="griffindor" />
+
+
         </div>
         <div className="links">
-          <a href="#story">our story</a>
           <a href="#visuals">visuals</a>
-          <a href="#contact">contact</a>
+          <a href="#story">our story</a>
         </div>
       </nav>
 
@@ -205,8 +202,8 @@ export default function Home() {
           padding-top: calc(env(safe-area-inset-top, 0px) + 26px);
         }
         .mark {
-          width: 26px;
-          height: 26px;
+          width: 20px;
+          height: 20px;
           opacity: 0.85;
           flex-shrink: 0;
         }
@@ -214,6 +211,11 @@ export default function Home() {
           width: 100%;
           height: 100%;
           display: block;
+        }
+          .mark img {
+          width:70px;
+          height:50px;
+          display:block;
         }
         .links {
           display: flex;
@@ -246,6 +248,7 @@ export default function Home() {
           padding: 0 6vw;
           opacity: 0.9;
         }
+          
         .content :global(span) {
           display: block;
           font-family: var(--font-respira-black), serif;
@@ -347,7 +350,7 @@ export default function Home() {
         }
       `}</style>
     </div>
-    <LaceSection />
+    <BottleRitual />
     </>
   );
 }
