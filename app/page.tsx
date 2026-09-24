@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import LaceSection from "./components/LaceSection";
 
 const SWORD_CURSOR =
@@ -11,6 +11,7 @@ export default function Home() {
   const introRef = useRef<HTMLDivElement>(null);
   const touchedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+  const [hint, setHint] = useState("move your cursor to part the dark");
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -32,6 +33,52 @@ export default function Home() {
 
     stage.addEventListener("pointermove", handlePointerMove);
     stage.addEventListener("pointerleave", handlePointerLeave);
+
+    // ---- mobile: no hover state, so tilting the phone drives the reveal ----
+    const isCoarsePointer =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (e.gamma == null || e.beta == null) return;
+      touchedRef.current = true;
+      const gamma = Math.max(-45, Math.min(45, e.gamma)); // left/right tilt
+      const beta = Math.max(0, Math.min(90, e.beta)); // front/back tilt
+      const x = window.innerWidth * (0.5 + gamma / 90);
+      const y = window.innerHeight * (0.15 + (beta / 90) * 0.7);
+      setPos(x, y);
+    };
+
+    const enableOrientation = () => {
+      const DeviceOrientationEventTyped = window.DeviceOrientationEvent as
+        | (typeof DeviceOrientationEvent & {
+            requestPermission?: () => Promise<"granted" | "denied">;
+          })
+        | undefined;
+      if (!DeviceOrientationEventTyped) return;
+
+      if (typeof DeviceOrientationEventTyped.requestPermission === "function") {
+        // iOS 13+: must be called from within a user gesture to succeed.
+        DeviceOrientationEventTyped.requestPermission()
+          .then((state) => {
+            if (state === "granted") {
+              window.addEventListener("deviceorientation", handleOrientation);
+            }
+          })
+          .catch(() => {
+            /* denied, or called outside a gesture — falls back to touch-drag / idle drift */
+          });
+      } else {
+        // Android and everything else: no permission prompt needed.
+        window.addEventListener("deviceorientation", handleOrientation);
+      }
+    };
+
+    if (isCoarsePointer) {
+      setHint("touch and move — or tilt your phone — to part the dark");
+      enableOrientation(); // works immediately on non-iOS
+      stage.addEventListener("pointerdown", enableOrientation, { once: true }); // satisfies iOS's gesture requirement
+    }
 
     // initial position, before the intro reveals anything
     setPos(window.innerWidth * 0.5, window.innerHeight * 0.4);
@@ -55,6 +102,8 @@ export default function Home() {
     return () => {
       stage.removeEventListener("pointermove", handlePointerMove);
       stage.removeEventListener("pointerleave", handlePointerLeave);
+      stage.removeEventListener("pointerdown", enableOrientation);
+      window.removeEventListener("deviceorientation", handleOrientation);
       clearTimeout(introTimer);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
@@ -92,7 +141,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <footer>move your cursor to part the dark</footer>
+      <footer>{hint}</footer>
       <div className="intro-cover" ref={introRef} />
 
       <style jsx>{`
@@ -103,6 +152,7 @@ export default function Home() {
           height: 100dvh;
           overflow: hidden;
           cursor: ${SWORD_CURSOR};
+          touch-action: none; /* keep the page from panning under the drag/tilt gesture */
         }
 
         .base {
@@ -158,6 +208,7 @@ export default function Home() {
           width: 26px;
           height: 26px;
           opacity: 0.85;
+          flex-shrink: 0;
         }
         .mark svg {
           width: 100%;
@@ -176,6 +227,7 @@ export default function Home() {
           opacity: 0.8;
           cursor: pointer;
           transition: opacity 0.25s ease;
+          white-space: nowrap;
         }
         .links a:hover {
           opacity: 1;
@@ -252,8 +304,8 @@ export default function Home() {
           right: 0;
           z-index: 6;
           text-align: center;
-          padding: 20px 0 calc(18px + env(safe-area-inset-bottom, 0px));
-          color: #5c5555;
+          padding: 20px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+          color: #E9E5DA;
           font-size: 12px;
           letter-spacing: 0.04em;
           opacity: 0.6;
@@ -270,6 +322,22 @@ export default function Home() {
         }
         .intro-cover.hide {
           opacity: 0;
+        }
+
+        @media (max-width: 480px) {
+          nav {
+            padding-left: 20px;
+            padding-right: 20px;
+          }
+          .links {
+            gap: 16px;
+          }
+          .links a {
+            font-size: 12px;
+          }
+          footer {
+            font-size: 11px;
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {

@@ -1,12 +1,26 @@
 * {
   box-sizing: border-box;
 }
- 
+
 html,
 body {
   margin: 0;
   background: #08070a;
   font-family: "Cormorant", serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* belt-and-suspenders: nothing on the page should ever be able to open up horizontal scroll */
 }
- 
+
+/* Grain, laid over the entire site — fixed so it stays put while the page
+   scrolls, sitting above everything (including the bottle canvas, z-index
+   50) but not intercepting clicks. Swap grain.png for grain.webp if you
+   want the smaller file; both are the same 1024x1024 tile. */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background-image: url("/grain.png");
+  background-repeat: repeat;
+  background-size: 420px 420px; /* tile size on screen — smaller = grainier, larger = softer */
+}
