@@ -47,6 +47,7 @@ export default function BottleRitual() {
   const wordRef = useRef<HTMLDivElement>(null);
   const waveRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const cardsGlowRef = useRef<HTMLDivElement>(null);
   const debugRef = useRef<HTMLDivElement>(null); // remove this + SHOW_DEBUG once the sequence is confirmed working
 
   const [openCard, setOpenCard] = useState<CardId>("bottle");
@@ -61,6 +62,7 @@ export default function BottleRitual() {
       !wordRef.current ||
       !waveRef.current ||
       !cardsRef.current ||
+      !cardsGlowRef.current ||
       !debugRef.current
     ) {
       return;
@@ -73,6 +75,7 @@ export default function BottleRitual() {
     const word = wordRef.current!;
     const wave = waveRef.current!;
     const cards = cardsRef.current!;
+    const cardsGlow = cardsGlowRef.current!;
     const debug = debugRef.current!;
     const SHOW_DEBUG = true; // flip to false (or delete the overlay) once confirmed working
 
@@ -125,6 +128,21 @@ export default function BottleRitual() {
     }
     recomputeAnchors();
 
+    // On a narrow/tall (mobile) viewport, the vertical FOV extent is the
+    // same in world units regardless of width — so the bottle ends up
+    // occupying a much smaller fraction of a tall phone screen, reading as
+    // small and adrift in empty space. Bigger on mobile compensates.
+    function getTargetHeight() {
+      return window.innerWidth < 760 ? 380 : 260;
+    }
+    let modelNaturalHeight = 1;
+    let loadedModel: THREE.Object3D | null = null;
+    function applyModelScale() {
+      if (!loadedModel) return;
+      const scale = getTargetHeight() / modelNaturalHeight;
+      loadedModel.scale.setScalar(scale);
+    }
+
     new GLTFLoader().load(
       "/models/Meshy_AI_Silver_Thorn_Rosé_0922080315_texture.glb",
       (gltf) => {
@@ -134,9 +152,9 @@ export default function BottleRitual() {
         model.position.sub(center);
 
         const size = box.getSize(new THREE.Vector3());
-        const targetHeight = 260;
-        const scale = targetHeight / (size.y || 1);
-        model.scale.setScalar(scale);
+        modelNaturalHeight = size.y || 1;
+        loadedModel = model;
+        applyModelScale();
 
         model.traverse((child) => {
           if (!(child instanceof THREE.Mesh)) return;
@@ -233,6 +251,7 @@ export default function BottleRitual() {
         phase = "uncards";
         lockScroll();
         cards.classList.remove("show");
+        cardsGlow.classList.remove("show");
         landedStart = performance.now();
       }
       lastScrollY = window.scrollY;
@@ -265,6 +284,7 @@ export default function BottleRitual() {
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
       recomputeAnchors();
+      applyModelScale();
     }
     window.addEventListener("resize", onResize);
 
@@ -359,6 +379,7 @@ export default function BottleRitual() {
         if (now - landedStart >= WAVE_MS) {
           phase = "cards";
           cards.classList.add("show");
+          cardsGlow.classList.add("show");
           unlockScroll();
         }
       } else if (phase === "uncards") {
@@ -421,15 +442,16 @@ export default function BottleRitual() {
           </div>
         </div>
 
-        <div ref={mountRef} className="canvas-mount" />
-        <div ref={vignetteRef} className="vignette" />
-
         <div ref={wordRef} className="word">
           Unbreakable
         </div>
 
+        <div ref={mountRef} className="canvas-mount" />
+        <div ref={vignetteRef} className="vignette" />
+
         <div ref={waveRef} className="wave" />
 
+        <div ref={cardsGlowRef} className="cards-glow" aria-hidden="true" />
         <div ref={cardsRef} className="cards">
           {CARDS.map((c) => (
             <button
@@ -439,21 +461,9 @@ export default function BottleRitual() {
               type="button"
             >
               <span className="icon" aria-hidden="true">
-                {c.id === "bottle" && (
-                  <span className="clover">
-                    <span /><span /><span /><span />
-                  </span>
-                )}
-                {c.id === "grape" && (
-                  <span className="grapes">
-                    <span /><span /><span /><span /><span />
-                  </span>
-                )}
-                {c.id === "pair" && (
-                  <svg viewBox="0 0 100 100" className="star">
-                    <polygon points="50,2 61,38 98,38 68,60 79,96 50,74 21,96 32,60 2,38 39,38" />
-                  </svg>
-                )}
+                {c.id === "bottle" && <img src="/images/icon-bottle.png" alt="" />}
+                {c.id === "grape" && <img src="/images/icon-grape.png" alt="" />}
+                {c.id === "pair" && <img src="/images/icon-pair.png" alt="" />}
               </span>
               <span className="title">
                 {c.title.split("\n").map((line, i) => (
@@ -486,6 +496,7 @@ export default function BottleRitual() {
         .ritual-wrap {
           position: relative;
           height: 220vh;
+          height: 220dvh; /* the wrap was missing this fallback (everything else here already had it) — the mismatch between plain vh and the actual visible viewport on mobile is what left a dead scrollable gap of empty page background at the end */
         }
         .ritual-pin {
           position: absolute;
@@ -574,6 +585,32 @@ export default function BottleRitual() {
           transform: translateY(0%);
         }
 
+        .cards-glow {
+          position: absolute;
+          inset: -10%;
+          opacity: 0;
+          transition: opacity 1.2s ease;
+          background: radial-gradient(circle at 20% 30%, rgba(210, 20, 20, 0.35) 0%, transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(210, 20, 20, 0.3) 0%, transparent 42%),
+            radial-gradient(circle at 50% 90%, rgba(120, 10, 10, 0.3) 0%, transparent 45%);
+          background-size: 160% 160%, 180% 180%, 200% 200%;
+          animation: cardsDrift 28s ease-in-out infinite alternate;
+          pointer-events: none;
+        }
+        .cards-glow.show {
+          opacity: 1;
+        }
+        @keyframes cardsDrift {
+          0% {
+            background-position: 10% 20%, 80% 70%, 50% 100%;
+          }
+          50% {
+            background-position: 35% 55%, 60% 40%, 45% 70%;
+          }
+          100% {
+            background-position: 70% 30%, 30% 65%, 55% 85%;
+          }
+        }
         .cards {
           position: absolute;
           inset: 0;
@@ -642,50 +679,17 @@ export default function BottleRitual() {
           width: 64px;
           height: 64px;
           margin-bottom: 8px;
+          transform: scale(1);
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .clover {
-          position: relative;
+        .card.open .icon {
+          transform: scale(1.18);
+        }
+        .icon img {
           display: block;
           width: 100%;
           height: 100%;
-        }
-        .clover span {
-          position: absolute;
-          width: 62%;
-          height: 62%;
-          border-radius: 50%;
-          background: radial-gradient(circle at 35% 35%, #ff8080, #6b0810);
-        }
-        .clover span:nth-child(1) { top: 0; left: 19%; }
-        .clover span:nth-child(2) { bottom: 0; left: 19%; }
-        .clover span:nth-child(3) { left: 0; top: 19%; }
-        .clover span:nth-child(4) { right: 0; top: 19%; }
-
-        .grapes {
-          position: relative;
-          display: block;
-          width: 100%;
-          height: 100%;
-        }
-        .grapes span {
-          position: absolute;
-          width: 34%;
-          height: 34%;
-          border-radius: 50%;
-          background: radial-gradient(circle at 35% 30%, #e6e6e6, #5e5e5e);
-        }
-        .grapes span:nth-child(1) { top: 0; left: 33%; }
-        .grapes span:nth-child(2) { top: 22%; left: 5%; }
-        .grapes span:nth-child(3) { top: 22%; right: 5%; }
-        .grapes span:nth-child(4) { bottom: 0; left: 12%; }
-        .grapes span:nth-child(5) { bottom: 0; right: 12%; }
-
-        .star {
-          width: 100%;
-          height: 100%;
-        }
-        .star polygon {
-          fill: #cfc7b4;
+          object-fit: contain;
         }
 
         .title {
@@ -740,14 +744,58 @@ export default function BottleRitual() {
         }
 
         @media (max-width: 760px) {
+          /* rotated to portrait orientation — both were landscape-shaped
+             graphics that left a lot of dead space on a tall narrow
+             screen; sized off vh now instead of vw since that's the
+             dimension that becomes the visual width after rotating */
+          .lion {
+            width: 80vh;
+            max-width: none;
+            transform: translateX(-50%) rotate(90deg);
+          }
+          .mat {
+            width: 80vh;
+            transform: translate(-50%, -50%) rotate(90deg);
+          }
+          /* turned on its side to fit the narrow width — rotate is baked
+             into both states so the existing scale reveal (0.92 -> 1)
+             still animates normally on top of it */
+          .word {
+            transform: scale(0.92) rotate(-90deg);
+          }
+          .word.show {
+            transform: scale(1) rotate(-90deg);
+          }
+          /* stacked instead of side-by-side — not enough width for three
+             columns on a phone */
           .cards {
-            gap: 14px;
-            padding: 0 4vw;
+            flex-direction: column;
+            gap: 12px;
+            padding: 4vh 6vw;
+            overflow-y: auto;
           }
           .card {
-            width: 30vw;
-            min-height: 320px;
-            padding: 18px 14px;
+            width: 100%;
+            min-height: auto;
+            padding: 16px 20px;
+          }
+          /* all three now just rise/fade in from below — "from both sides"
+             doesn't apply once they're stacked instead of side-by-side */
+          .card-bottle,
+          .card-grape,
+          .card-pair {
+            transform: translateY(50px);
+            transition-delay: 0s;
+          }
+          .cards.show .card-bottle,
+          .cards.show .card-grape,
+          .cards.show .card-pair {
+            transform: translateY(0);
+          }
+          .icon {
+            width: 44px;
+            height: 44px;
+            margin-bottom: 4px;
           }
           .title {
             font-size: 16px;
