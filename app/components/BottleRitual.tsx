@@ -91,6 +91,25 @@ export default function BottleRitual() {
     renderer.toneMappingExposure = 0.75;
     mount.appendChild(renderer.domElement);
 
+    // Mobile GPUs lose their WebGL context far more readily than desktop
+    // (tab backgrounding, memory pressure, OS-level reclaiming) — and a
+    // lost context with no handler can leave the canvas rendering solid
+    // black indefinitely, with nothing else telling the page it happened.
+    // preventDefault() on the loss event is what allows the browser to
+    // attempt automatic restoration at all; without it, the context is
+    // gone for good until the page reloads.
+    function handleContextLost(e: Event) {
+      e.preventDefault();
+    }
+    function handleContextRestored() {
+      // Materials/geometry survive in Three.js's own memory — this just
+      // needs the actual GPU objects re-uploaded, which re-rendering
+      // triggers on its own once the context is back.
+      renderer.render(scene, camera);
+    }
+    renderer.domElement.addEventListener("webglcontextlost", handleContextLost, false);
+    renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored, false);
+
     const scene = new THREE.Scene();
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -300,9 +319,65 @@ export default function BottleRitual() {
       return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
     }
 
+    // ---- watchdog: if we're sitting in any of the locked, timer-driven
+    // phases for far longer than they should ever take (rAF throttled by
+    // a backgrounded tab, a dropped context, anything else unanticipated),
+    // force-resolve to a sensible endpoint instead of leaving the page
+    // permanently stuck with scroll locked and nothing moving. The normal
+    // path finishes every phase in well under this; it should only ever
+    // fire when something's actually gone wrong. ----
+    const FORWARD_LOCKED_PHASES: Phase[] = ["falling", "landed", "word", "wave"];
+    const REVERSE_LOCKED_PHASES: Phase[] = ["uncards", "unwave", "unword", "unfalling"];
+    const WATCHDOG_MS = 8000;
+    let watchdogPhase: Phase | null = null;
+    let watchdogSince = performance.now();
+
+    function resolveStuckPhase() {
+      if (FORWARD_LOCKED_PHASES.includes(phase)) {
+        phase = "cards";
+        bg.classList.add("hide");
+        word.classList.remove("show");
+        backlight.classList.remove("show");
+        wave.classList.add("rise");
+        cards.classList.add("show");
+        cardsGlow.classList.add("show");
+        backToTop.classList.add("show");
+        bottle.position.y = landedY;
+        bottle.rotation.set(0, 0, 0);
+        bottle.scale.setScalar(1);
+        camera.fov = BASE_FOV;
+        camera.position.set(0, 0, CAM_DISTANCE);
+        camera.updateProjectionMatrix();
+        vignette.style.opacity = "0";
+        unlockScroll();
+      } else if (REVERSE_LOCKED_PHASES.includes(phase)) {
+        phase = "rotate";
+        rotationProgress = 1;
+        displayRotation = 1;
+        bg.classList.remove("hide");
+        word.classList.remove("show");
+        backlight.classList.remove("show");
+        wave.classList.remove("rise");
+        cards.classList.remove("show");
+        cardsGlow.classList.remove("show");
+        backToTop.classList.remove("show");
+        vignette.style.opacity = "0";
+        unlockScroll();
+      }
+    }
+
     function animate(now: number) {
       raf = requestAnimationFrame(animate);
       updatePinAndProgress();
+
+      if (phase !== watchdogPhase) {
+        watchdogPhase = phase;
+        watchdogSince = now;
+      } else if (scrollLocked && now - watchdogSince > WATCHDOG_MS) {
+        resolveStuckPhase();
+        watchdogPhase = phase;
+        watchdogSince = now;
+      }
 
       if (!modelReady) {
         renderer.render(scene, camera);
@@ -420,6 +495,8 @@ export default function BottleRitual() {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
+      renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
       unlockScroll();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
