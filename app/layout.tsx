@@ -12,6 +12,7 @@ const respiraBlack = localFont({
 });
 
 export const metadata: Metadata = {
+  
   title: "Brosé — the new ritual",
   description: "Brosé, the new ritual.",
 };

@@ -169,7 +169,7 @@ export default function Home() {
           height: 100vh;
           height: 100dvh;
           overflow: hidden;
-          touch-action: none; /* keep the page from panning under the drag/tilt gesture */
+          touch-action: pan-y; /* was "none", which blocked ALL touch gestures including the vertical swipe needed to scroll past this section — pan-y allows vertical scroll while still suppressing horizontal drag/pinch */
         }
 
         .base {
