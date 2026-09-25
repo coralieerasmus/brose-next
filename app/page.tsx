@@ -115,7 +115,7 @@ export default function Home() {
 
       <div className="content">
         <span>Brosé,</span>
-        <span>the ne</span>
+        <span>the new</span>
         <span>ritual.</span>
       </div>
 
