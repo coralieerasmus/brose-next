@@ -36,3 +36,28 @@ body {
   background-repeat: repeat;
   background-size: 420px 420px; /* tile size on screen — smaller = grainier, larger = softer */
 }
+
+/* Pre-hydration cover. This lives in the real stylesheet (not styled-jsx) so
+   it paints on the very first frame, hiding the hero's unstyled markup until
+   React has hydrated and the component styles + fonts are in. <Preloader />
+   fades it out. The animation at the bottom is a failsafe: if JS never runs,
+   the cover still lifts after 6s instead of blocking the site forever. */
+.site-preload {
+  position: fixed;
+  inset: 0;
+  z-index: 99990; /* above grain/vignette/hero, below the age gate (100000) */
+  background: #000;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+  animation: site-preload-failsafe 0.6s ease 6s forwards;
+}
+.site-preload.is-done {
+  opacity: 0;
+}
+@keyframes site-preload-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import SiteChrome from "./components/SiteChrome";
+import Preloader from "./components/Preloader";
 
 // Only Respira Black — Della Respira is retired, don't reintroduce it here.
 const respiraBlack = localFont({
@@ -12,7 +13,6 @@ const respiraBlack = localFont({
 });
 
 export const metadata: Metadata = {
-  
   title: "Brosé — the new ritual",
   description: "Brosé, the new ritual.",
 };
@@ -37,6 +37,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <Preloader />
         {children}
         <div className="site-vignette" aria-hidden="true" />
         <div className="grain-overlay" aria-hidden="true" />
